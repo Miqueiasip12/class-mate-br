@@ -5,9 +5,11 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { db } from '@/lib/database';
 import { Horario, Turma } from '@/types/database';
+import { ChamadaListaScreen } from './ChamadaListaScreen';
 
 export function ChamadaScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedTurmaForAttendance, setSelectedTurmaForAttendance] = useState<{ turma: Turma; data: Date } | null>(null);
 
   // Get current month and year
   const currentMonth = selectedDate.getMonth();
@@ -81,6 +83,17 @@ export function ChamadaScreen() {
   };
 
   const classesForSelectedDate = getClassesForDate();
+
+  // If viewing attendance list, show that screen
+  if (selectedTurmaForAttendance) {
+    return (
+      <ChamadaListaScreen 
+        turma={selectedTurmaForAttendance.turma} 
+        data={selectedTurmaForAttendance.data}
+        onBack={() => setSelectedTurmaForAttendance(null)} 
+      />
+    );
+  }
 
   return (
     <div className="p-4 space-y-6">
@@ -182,8 +195,7 @@ export function ChamadaScreen() {
                     <Button 
                       className="bg-primary hover:bg-primary/90"
                       onClick={() => {
-                        // Navigate to attendance list screen
-                        console.log('Navigate to attendance for', turma.id, selectedDate);
+                        setSelectedTurmaForAttendance({ turma, data: selectedDate });
                       }}
                     >
                       Fazer Chamada

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Plus, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, ChevronDown, ChevronRight, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { cn } from '@/lib/utils';
 import { db } from '@/lib/database';
 import { Turma } from '@/types/database';
+import { TurmaDetalhesScreen } from './TurmaDetalhesScreen';
 import { useToast } from '@/hooks/use-toast';
 
 export function TurmasScreen() {
@@ -17,6 +18,7 @@ export function TurmasScreen() {
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [editingTurma, setEditingTurma] = useState<Turma | null>(null);
+  const [selectedTurma, setSelectedTurma] = useState<Turma | null>(null);
   const { toast } = useToast();
 
   // Form state
@@ -138,6 +140,16 @@ export function TurmasScreen() {
     db.createEscola('Minha Escola');
   }
 
+  // If viewing turma details, show that screen
+  if (selectedTurma) {
+    return (
+      <TurmaDetalhesScreen 
+        turma={selectedTurma} 
+        onBack={() => setSelectedTurma(null)} 
+      />
+    );
+  }
+
   return (
     <div className="p-4 space-y-6 pb-24">
       {/* Header */}
@@ -170,9 +182,9 @@ export function TurmasScreen() {
 
             return (
               <Card key={turma.id} className="overflow-hidden bg-gradient-card border-border">
-                <button
-                  onClick={() => setExpandedCard(isExpanded ? null : turma.id)}
-                  className="w-full p-4 text-left hover:bg-muted/30 transition-colors"
+                <div
+                  onClick={() => setSelectedTurma(turma)}
+                  className="w-full p-4 text-left hover:bg-muted/30 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
@@ -182,13 +194,24 @@ export function TurmasScreen() {
                         {escola?.nome} • {alunosCount} alunos
                       </p>
                     </div>
-                    {isExpanded ? (
-                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                    )}
+                    <div className="flex items-center space-x-2">
+                      <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedCard(isExpanded ? null : turma.id);
+                        }}
+                        className="p-1"
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </button>
+                </div>
 
                 {isExpanded && (
                   <div className="px-4 pb-4 border-t border-border bg-muted/20">

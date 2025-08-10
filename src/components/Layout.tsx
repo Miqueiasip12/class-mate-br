@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, Users, Clock, BookOpen, Menu } from 'lucide-react';
+import { CalendarDays, Users, Clock, BookOpen, School, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -12,6 +12,7 @@ const navItems: NavItem[] = [
   { id: 'chamada', label: 'Chamada', icon: CalendarDays },
   { id: 'turmas', label: 'Turmas', icon: Users },
   { id: 'cronograma', label: 'Cronograma', icon: Clock },
+  { id: 'escolas', label: 'Escolas', icon: School },
   { id: 'biblioteca', label: 'Biblioteca', icon: BookOpen },
 ];
 
@@ -45,7 +46,7 @@ export function Layout({ children, activeTab = 'chamada', onTabChange }: LayoutP
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-nav-background border-t border-border px-4 py-2 shadow-elevated">
-        <div className="flex justify-around items-center max-w-md mx-auto">
+        <div className="flex justify-around items-center max-w-lg mx-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -55,7 +56,7 @@ export function Layout({ children, activeTab = 'chamada', onTabChange }: LayoutP
                 key={item.id}
                 onClick={() => onTabChange?.(item.id)}
                 className={cn(
-                  "flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200",
+                  "flex flex-col items-center space-y-1 p-2 rounded-lg transition-all duration-200 min-w-0 flex-1",
                   isActive
                     ? "text-nav-active bg-primary/10"
                     : "text-nav-inactive hover:text-nav-active"
@@ -65,7 +66,7 @@ export function Layout({ children, activeTab = 'chamada', onTabChange }: LayoutP
                   "w-5 h-5 transition-all duration-200",
                   isActive ? "scale-110" : ""
                 )} />
-                <span className="text-xs font-medium">{item.label}</span>
+                <span className="text-xs font-medium truncate">{item.label}</span>
               </button>
             );
           })}

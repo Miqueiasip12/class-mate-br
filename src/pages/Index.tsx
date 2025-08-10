@@ -3,6 +3,7 @@ import { Layout } from '@/components/Layout';
 import { ChamadaScreen } from '@/components/screens/ChamadaScreen';
 import { TurmasScreen } from '@/components/screens/TurmasScreen';
 import { CronogramaScreen } from '@/components/screens/CronogramaScreen';
+import { EscolasScreen } from '@/components/screens/EscolasScreen';
 import { BibliotecaScreen } from '@/components/screens/BibliotecaScreen';
 
 const Index = () => {
@@ -16,6 +17,8 @@ const Index = () => {
         return <TurmasScreen />;
       case 'cronograma':
         return <CronogramaScreen />;
+      case 'escolas':
+        return <EscolasScreen />;
       case 'biblioteca':
         return <BibliotecaScreen />;
       default:

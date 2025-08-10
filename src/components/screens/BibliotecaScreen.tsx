@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, Plus, Edit, Trash2, ChevronDown, ChevronRight, FileText, Folder } from 'lucide-react';
+import { BookOpen, Plus, Edit, Trash2, ChevronDown, ChevronRight, FileText, Folder, Upload, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
@@ -20,6 +20,8 @@ export function BibliotecaScreen() {
   const [editingDisciplina, setEditingDisciplina] = useState<Disciplina | null>(null);
   const [editingMateria, setEditingMateria] = useState<Materia | null>(null);
   const [selectedDisciplinaId, setSelectedDisciplinaId] = useState<string>('');
+  const [showFilesSheet, setShowFilesSheet] = useState(false);
+  const [selectedMateria, setSelectedMateria] = useState<Materia | null>(null);
   const { toast } = useToast();
 
   // Form state
@@ -219,6 +221,86 @@ export function BibliotecaScreen() {
     setSelectedDisciplinaId('');
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || !selectedMateria) return;
+
+    try {
+      const newFiles: string[] = [];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        
+        await new Promise((resolve) => {
+          reader.onload = () => {
+            const base64 = reader.result as string;
+            const fileName = `${file.name}|${base64}`;
+            newFiles.push(fileName);
+            resolve(true);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+      
+      const updatedFiles = [...selectedMateria.arquivosPath, ...newFiles];
+      db.updateMateria(selectedMateria.id, { arquivosPath: updatedFiles });
+      refreshData();
+      
+      toast({
+        title: "Sucesso",
+        description: `${newFiles.length} arquivo(s) adicionado(s) com sucesso`
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao fazer upload dos arquivos",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRemoveFile = (materiaId: string, fileIndex: number) => {
+    const materia = db.getMateria(materiaId);
+    if (!materia) return;
+
+    const updatedFiles = materia.arquivosPath.filter((_, index) => index !== fileIndex);
+    db.updateMateria(materiaId, { arquivosPath: updatedFiles });
+    refreshData();
+    
+    if (selectedMateria?.id === materiaId) {
+      setSelectedMateria({ ...materia, arquivosPath: updatedFiles });
+    }
+    
+    toast({
+      title: "Sucesso",
+      description: "Arquivo removido com sucesso"
+    });
+  };
+
+  const handleDownloadFile = (fileName: string) => {
+    try {
+      const [originalName, base64Data] = fileName.split('|');
+      const link = document.createElement('a');
+      link.href = base64Data;
+      link.download = originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao baixar arquivo",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const openFilesSheet = (materia: Materia) => {
+    setSelectedMateria(materia);
+    setShowFilesSheet(true);
+  };
+
   const getMateriasByDisciplina = (disciplinaId: string) => {
     return db.getMateriasByDisciplina(disciplinaId);
   };
@@ -320,7 +402,10 @@ export function BibliotecaScreen() {
                             key={materia.id}
                             className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border"
                           >
-                            <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => openFilesSheet(materia)}
+                              className="flex items-center space-x-3 flex-1 text-left hover:bg-muted/30 rounded-lg p-2 transition-colors"
+                            >
                               <FileText className="w-4 h-4 text-primary" />
                               <div>
                                 <h4 className="font-medium text-card-foreground">{materia.nome}</h4>
@@ -328,7 +413,7 @@ export function BibliotecaScreen() {
                                   {materia.arquivosPath.length} {materia.arquivosPath.length === 1 ? 'arquivo' : 'arquivos'}
                                 </p>
                               </div>
-                            </div>
+                            </button>
                             <div className="flex gap-1">
                               <Button
                                 variant="ghost"
@@ -440,6 +525,95 @@ export function BibliotecaScreen() {
               className="flex-1 bg-primary hover:bg-primary/90"
             >
               {editingMateria ? "Salvar" : "Criar"}
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      {/* Files Management Bottom Sheet */}
+      <BottomSheet
+        isOpen={showFilesSheet}
+        onClose={() => setShowFilesSheet(false)}
+        title={`Arquivos - ${selectedMateria?.nome || ''}`}
+      >
+        <div className="p-4 space-y-4">
+          {/* Upload Button */}
+          <div className="space-y-2">
+            <Label>Adicionar Arquivos</Label>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => document.getElementById('file-upload')?.click()}
+                className="flex-1"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Selecionar Arquivos
+              </Button>
+              <input
+                id="file-upload"
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Suporta PDF, Word, Excel, PowerPoint e arquivos de texto
+            </p>
+          </div>
+
+          {/* Files List */}
+          {selectedMateria && selectedMateria.arquivosPath.length > 0 ? (
+            <div className="space-y-2">
+              <Label>Arquivos ({selectedMateria.arquivosPath.length})</Label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {selectedMateria.arquivosPath.map((filePath, index) => {
+                  const [fileName] = filePath.split('|');
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border"
+                    >
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-sm text-card-foreground truncate" title={fileName}>
+                          {fileName}
+                        </span>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadFile(filePath)}
+                          title="Baixar arquivo"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(selectedMateria.id, index)}
+                          title="Remover arquivo"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">Nenhum arquivo adicionado</p>
+            </div>
+          )}
+
+          <div className="pt-4">
+            <Button variant="outline" onClick={() => setShowFilesSheet(false)} className="w-full">
+              Fechar
             </Button>
           </div>
         </div>

@@ -248,6 +248,15 @@ export function TurmaDetalhesScreen({ turma, onBack }: TurmaDetalhesScreenProps)
     setShowEnrollSheet(true);
   };
 
+  const handleCreateTurmaWithStudents = (selectedStudentIds: string[]) => {
+    // This would be called from the parent component when creating a new turma
+    // with pre-selected students from other classes
+    selectedStudentIds.forEach(studentId => {
+      db.addAlunoToTurma(turma.id, studentId);
+    });
+    refreshAlunos();
+  };
+
   const closeAddStudentSheet = () => {
     setShowAddStudentSheet(false);
     setEditingAluno(null);

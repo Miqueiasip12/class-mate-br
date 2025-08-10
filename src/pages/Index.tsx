@@ -1,13 +1,32 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { Layout } from '@/components/Layout';
+import { ChamadaScreen } from '@/components/screens/ChamadaScreen';
+import { TurmasScreen } from '@/components/screens/TurmasScreen';
+import { CronogramaScreen } from '@/components/screens/CronogramaScreen';
+import { BibliotecaScreen } from '@/components/screens/BibliotecaScreen';
 
 const Index = () => {
+  const [activeScreen, setActiveScreen] = useState('chamada');
+
+  const renderScreen = () => {
+    switch (activeScreen) {
+      case 'chamada':
+        return <ChamadaScreen />;
+      case 'turmas':
+        return <TurmasScreen />;
+      case 'cronograma':
+        return <CronogramaScreen />;
+      case 'biblioteca':
+        return <BibliotecaScreen />;
+      default:
+        return <ChamadaScreen />;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <Layout activeTab={activeScreen} onTabChange={setActiveScreen}>
+      {renderScreen()}
+    </Layout>
   );
 };
 

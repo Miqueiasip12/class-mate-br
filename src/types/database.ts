@@ -61,3 +61,12 @@ export interface Materia {
   arquivosPath: string[];
   createdAt: string;
 }
+
+export interface AulaAvulsa {
+  id: string;
+  turmaId: string;
+  data: string; // "YYYY-MM-DD"
+  horaInicio: string; // "HH:mm"
+  horaFim: string; // "HH:mm"
+  createdAt: string;
+}

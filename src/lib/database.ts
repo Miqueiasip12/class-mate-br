@@ -6,7 +6,8 @@ import {
   Chamada, 
   ConteudoAula, 
   Disciplina, 
-  Materia 
+  Materia,
+  AulaAvulsa
 } from '@/types/database';
 
 const DB_PREFIX = 'teacher_agent_';
@@ -201,6 +202,63 @@ export class LocalDatabase {
     return this.getHorarios().filter(horario => horario.diaDaSemana === dayOfWeek);
   }
 
+  // Aulas Avulsas
+  createAulaAvulsa(turmaId: string, data: string, horaInicio: string, horaFim: string): AulaAvulsa {
+    const aulaAvulsa: AulaAvulsa = {
+      id: this.generateId(),
+      turmaId,
+      data,
+      horaInicio,
+      horaFim,
+      createdAt: new Date().toISOString()
+    };
+    this.add('aulas_avulsas', aulaAvulsa);
+    return aulaAvulsa;
+  }
+
+  getAulasAvulsas(): AulaAvulsa[] {
+    return this.getAll<AulaAvulsa>('aulas_avulsas');
+  }
+
+  getAulaAvulsa(id: string): AulaAvulsa | null {
+    return this.getById<AulaAvulsa>('aulas_avulsas', id);
+  }
+
+  updateAulaAvulsa(id: string, updates: Partial<AulaAvulsa>): void {
+    this.updateGeneric('aulas_avulsas', id, updates);
+  }
+
+  deleteAulaAvulsa(id: string): void {
+    this.delete('aulas_avulsas', id);
+  }
+
+  getAulasAvulsasByData(data: Date): AulaAvulsa[] {
+    const dateString = data.toISOString().split('T')[0];
+    return this.getAulasAvulsas().filter(aula => aula.data === dateString);
+  }
+
+  // Método atualizado para incluir tanto horários regulares quanto aulas avulsas
+  getTodasAulasPorData(data: Date): Array<{type: 'regular' | 'avulsa', horario?: Horario, aulaAvulsa?: AulaAvulsa}> {
+    const horariosRegulares = this.getHorariosByData(data);
+    const aulasAvulsas = this.getAulasAvulsasByData(data);
+    
+    const result: Array<{type: 'regular' | 'avulsa', horario?: Horario, aulaAvulsa?: AulaAvulsa}> = [];
+    
+    horariosRegulares.forEach(horario => {
+      result.push({ type: 'regular', horario });
+    });
+    
+    aulasAvulsas.forEach(aulaAvulsa => {
+      result.push({ type: 'avulsa', aulaAvulsa });
+    });
+    
+    return result.sort((a, b) => {
+      const timeA = a.horario?.horaInicio || a.aulaAvulsa?.horaInicio || '';
+      const timeB = b.horario?.horaInicio || b.aulaAvulsa?.horaInicio || '';
+      return timeA.localeCompare(timeB);
+    });
+  }
+
   // Chamada
   createOrUpdateChamada(alunoId: string, turmaId: string, data: string, presente: boolean, observacao?: string): Chamada {
     const id = `${alunoId}_${turmaId}_${data}`;
@@ -347,6 +405,7 @@ export class LocalDatabase {
       conteudos: this.getAll<ConteudoAula>('conteudos'),
       disciplinas: this.getDisciplinas(),
       materias: this.getMaterias(),
+      aulas_avulsas: this.getAulasAvulsas(),
       exportDate: new Date().toISOString()
     };
     return JSON.stringify(data, null, 2);
@@ -372,6 +431,7 @@ export class LocalDatabase {
       if (data.conteudos) this.save('conteudos', data.conteudos);
       if (data.disciplinas) this.save('disciplinas', data.disciplinas);
       if (data.materias) this.save('materias', data.materias);
+      if (data.aulas_avulsas) this.save('aulas_avulsas', data.aulas_avulsas);
 
     } catch (error) {
       throw new Error('Formato de backup inválido');

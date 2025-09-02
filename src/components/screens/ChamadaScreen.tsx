@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { db } from '@/lib/database';
-import { Horario, Turma } from '@/types/database';
+import { Horario, Turma, AulaAvulsa } from '@/types/database';
 import { ChamadaListaScreen } from './ChamadaListaScreen';
 
 export function ChamadaScreen() {
@@ -70,16 +70,32 @@ export function ChamadaScreen() {
   };
 
   // Get scheduled classes for selected date
-  const scheduledClasses = db.getHorariosByData(selectedDate);
+  const todasAulas = db.getTodasAulasPorData(selectedDate);
   const turmas = db.getTurmas();
 
-  const getClassesForDate = (): Array<{ horario: Horario; turma: Turma }> => {
-    return scheduledClasses
-      .map(horario => {
-        const turma = turmas.find(t => t.id === horario.turmaId);
-        return turma ? { horario, turma } : null;
+  const getClassesForDate = (): Array<{ 
+    horario?: Horario; 
+    aulaAvulsa?: AulaAvulsa; 
+    turma: Turma; 
+    type: 'regular' | 'avulsa' 
+  }> => {
+    return todasAulas
+      .map(aula => {
+        const turmaId = aula.horario?.turmaId || aula.aulaAvulsa?.turmaId;
+        const turma = turmas.find(t => t.id === turmaId);
+        return turma ? { 
+          horario: aula.horario, 
+          aulaAvulsa: aula.aulaAvulsa,
+          turma, 
+          type: aula.type 
+        } : null;
       })
-      .filter(Boolean) as Array<{ horario: Horario; turma: Turma }>;
+      .filter(Boolean) as Array<{ 
+        horario?: Horario; 
+        aulaAvulsa?: AulaAvulsa; 
+        turma: Turma; 
+        type: 'regular' | 'avulsa' 
+      }>;
   };
 
   const classesForSelectedDate = getClassesForDate();
@@ -174,21 +190,31 @@ export function ChamadaScreen() {
         {/* Classes for Selected Date */}
         {classesForSelectedDate.length > 0 ? (
           <div className="space-y-3">
-            {classesForSelectedDate.map(({ horario, turma }) => {
+            {classesForSelectedDate.map(({ horario, aulaAvulsa, turma, type }) => {
               const escola = db.getEscola(turma.escolaId);
               const alunosCount = db.getAlunosByTurma(turma.id).length;
+              const horaInicio = horario?.horaInicio || aulaAvulsa?.horaInicio || '';
+              const horaFim = horario?.horaFim || aulaAvulsa?.horaFim || '';
+              const id = horario?.id || aulaAvulsa?.id || '';
               
               return (
-                <Card key={horario.id} className="p-4 bg-gradient-card border-border">
+                <Card key={id} className="p-4 bg-gradient-card border-border">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-semibold text-card-foreground">{turma.nome}</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-card-foreground">{turma.nome}</h4>
+                        {type === 'avulsa' && (
+                          <span className="px-2 py-1 text-xs bg-accent text-accent-foreground rounded-md">
+                            Aula Avulsa
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">{turma.disciplina}</p>
                       <p className="text-sm text-muted-foreground">
                         {escola?.nome} • {alunosCount} alunos
                       </p>
                       <p className="text-sm text-accent font-medium">
-                        {horario.horaInicio} - {horario.horaFim}
+                        {horaInicio} - {horaFim}
                       </p>
                     </div>
                     

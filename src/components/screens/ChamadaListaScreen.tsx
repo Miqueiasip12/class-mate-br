@@ -58,10 +58,9 @@ export function ChamadaListaScreen({ turma, data, onBack }: ChamadaListaScreenPr
     }
   });
 
-  const toggleAttendance = (alunoId: string) => {
+  const setAttendance = (alunoId: string, presente: boolean) => {
     const newMap = new Map(attendanceMap);
-    const currentValue = newMap.get(alunoId) ?? true; // Default to present
-    newMap.set(alunoId, !currentValue);
+    newMap.set(alunoId, presente);
     setAttendanceMap(newMap);
 
     // Save immediately
@@ -70,7 +69,7 @@ export function ChamadaListaScreen({ turma, data, onBack }: ChamadaListaScreenPr
         alunoId, 
         turma.id, 
         dateString, 
-        !currentValue, 
+        presente, 
         observationsMap.get(alunoId)
       );
     } catch (error) {
@@ -283,7 +282,7 @@ export function ChamadaListaScreen({ turma, data, onBack }: ChamadaListaScreenPr
                       <Button
                         variant={isPresent ? "default" : "ghost"}
                         size="sm"
-                        onClick={() => isPresent || toggleAttendance(aluno.id)}
+                        onClick={() => setAttendance(aluno.id, true)}
                         className={cn(
                           "rounded-none px-3",
                           isPresent && "bg-success hover:bg-success/90 text-success-foreground"
@@ -295,7 +294,7 @@ export function ChamadaListaScreen({ turma, data, onBack }: ChamadaListaScreenPr
                       <Button
                         variant={!isPresent ? "default" : "ghost"}
                         size="sm"
-                        onClick={() => !isPresent || toggleAttendance(aluno.id)}
+                        onClick={() => setAttendance(aluno.id, false)}
                         className={cn(
                           "rounded-none px-3",
                           !isPresent && "bg-destructive hover:bg-destructive/90 text-destructive-foreground"

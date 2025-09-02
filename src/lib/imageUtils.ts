@@ -1,15 +1,15 @@
 // Utility functions for handling file uploads and images
 
-export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+export const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
 
 export const validateImageFile = (file: File): string | null => {
   if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-    return 'Formato de arquivo não suportado. Use JPEG, PNG ou WebP.';
+    return 'Formato de arquivo não suportado. Use JPEG, PNG, WebP ou GIF.';
   }
   
   if (file.size > MAX_FILE_SIZE) {
-    return 'Arquivo muito grande. Tamanho máximo: 5MB.';
+    return 'Arquivo muito grande. Tamanho máximo: 20MB.';
   }
   
   return null;

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { db } from '@/lib/database';
 import { Disciplina, Materia } from '@/types/database';
 import { useToast } from '@/hooks/use-toast';
+import { validateFile, formatFileSize, getFileIcon } from '@/lib/fileUtils';
 
 export function BibliotecaScreen() {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>(db.getDisciplinas());
@@ -227,15 +228,24 @@ export function BibliotecaScreen() {
 
     try {
       const newFiles: string[] = [];
+      const errors: string[] = [];
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        
+        // Validate file
+        const validation = validateFile(file);
+        if (validation) {
+          errors.push(`${file.name}: ${validation}`);
+          continue;
+        }
+        
         const reader = new FileReader();
         
         await new Promise((resolve) => {
           reader.onload = () => {
             const base64 = reader.result as string;
-            const fileName = `${file.name}|${base64}`;
+            const fileName = `${file.name}|${file.type}|${file.size}|${base64}`;
             newFiles.push(fileName);
             resolve(true);
           };
@@ -243,14 +253,25 @@ export function BibliotecaScreen() {
         });
       }
       
-      const updatedFiles = [...selectedMateria.arquivosPath, ...newFiles];
-      db.updateMateria(selectedMateria.id, { arquivosPath: updatedFiles });
-      refreshData();
+      // Show errors if any
+      if (errors.length > 0) {
+        toast({
+          title: "Alguns arquivos não foram adicionados",
+          description: errors.join('\n'),
+          variant: "destructive"
+        });
+      }
       
-      toast({
-        title: "Sucesso",
-        description: `${newFiles.length} arquivo(s) adicionado(s) com sucesso`
-      });
+      if (newFiles.length > 0) {
+        const updatedFiles = [...selectedMateria.arquivosPath, ...newFiles];
+        db.updateMateria(selectedMateria.id, { arquivosPath: updatedFiles });
+        refreshData();
+        
+        toast({
+          title: "Sucesso",
+          description: `${newFiles.length} arquivo(s) adicionado(s) com sucesso`
+        });
+      }
     } catch (error) {
       toast({
         title: "Erro",
@@ -280,7 +301,10 @@ export function BibliotecaScreen() {
 
   const handleDownloadFile = (fileName: string) => {
     try {
-      const [originalName, base64Data] = fileName.split('|');
+      const parts = fileName.split('|');
+      const originalName = parts[0];
+      const base64Data = parts[parts.length - 1]; // Last part is always base64
+      
       const link = document.createElement('a');
       link.href = base64Data;
       link.download = originalName;
@@ -553,13 +577,13 @@ export function BibliotecaScreen() {
                 id="file-upload"
                 type="file"
                 multiple
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.webp,.mp3,.mp4"
                 onChange={handleFileUpload}
                 className="hidden"
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Suporta PDF, Word, Excel, PowerPoint e arquivos de texto
+              Suporta PDF, Word, Excel, PowerPoint, imagens, áudio (MP3), vídeo (MP4) e arquivos de texto (máx 20MB)
             </p>
           </div>
 
@@ -569,17 +593,29 @@ export function BibliotecaScreen() {
               <Label>Arquivos ({selectedMateria.arquivosPath.length})</Label>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {selectedMateria.arquivosPath.map((filePath, index) => {
-                  const [fileName] = filePath.split('|');
+                  const parts = filePath.split('|');
+                  const fileName = parts[0];
+                  const fileType = parts.length > 3 ? parts[1] : '';
+                  const fileSize = parts.length > 3 ? parseInt(parts[2]) : 0;
+                  const icon = getFileIcon(fileType);
+                  
                   return (
                     <div
                       key={index}
                       className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border"
                     >
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <FileText className="w-4 h-4 text-primary flex-shrink-0" />
-                        <span className="text-sm text-card-foreground truncate" title={fileName}>
-                          {fileName}
-                        </span>
+                        <span className="text-lg flex-shrink-0">{icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-card-foreground truncate" title={fileName}>
+                            {fileName}
+                          </div>
+                          {fileSize > 0 && (
+                            <div className="text-xs text-muted-foreground">
+                              {formatFileSize(fileSize)}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-1 flex-shrink-0">
                         <Button
